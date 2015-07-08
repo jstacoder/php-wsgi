@@ -11,18 +11,19 @@ from flask import Flask,request,make_response,render_template
 import json
 
 class WSGIBase(object):
-    def __init__(self,app_path=None,app=None):
+    def __init__(self,app_path=None,app=None,index_file=None):
+        self._index_file = index_file or 'index.php'
         self.app = app
         self.app_path = app_path and op.realpath(op.join(there,app_path))
+        
+    @property
+    def index_file(self):
+        return op.join(self.app_path,self._index_file)
 
 
 class PhpWsgiAppMiddleware(WSGIBase):
 
     CMD = 'php -f {0}'
-
-    @property
-    def index_file(self):
-        return op.join(self.app_path,'index.php')
 
     def _get_cmd(self):
         has_php = op.exists(self.index_file)
@@ -96,7 +97,7 @@ class PhpWsgiApp(object):
     # example of using to run php app
     # first get a python wsgi app to wrap our 
     # middlewares with
-    def __init__(self,app_path=None,app=None):
+    def __init__(self,app_path=None,app=None,):
         self.app_path = app_path or there
         if app is None:
             app = Flask(__name__)
