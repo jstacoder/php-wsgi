@@ -35,6 +35,8 @@ class PhpWsgiAppMiddleware(WSGIBase):
     def __call__(self,environ,start_response):
         file_location = '{}{}'.format(self.app_path,environ.get('PATH_INFO'))        
         if op.exists(file_location) and op.isfile(file_location):
+            if file_location.endswith('.php'):
+                PHP_SCRIPT = file_location
             # static file send request to static processor
             pass
         else:
