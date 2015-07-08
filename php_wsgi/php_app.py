@@ -34,14 +34,14 @@ class PhpWsgiAppMiddleware(WSGIBase):
         return self._get_cmd() and getoutput(self._get_cmd())
 
     def __call__(self,environ,start_response):
+        self._run = True
         file_location = '{}{}'.format(self.app_path,environ.get('PATH_INFO'))        
         if op.exists(file_location) and op.isfile(file_location):
+            self._run = False            
             if file_location.endswith('.php'):
-                PHP_SCRIPT = file_location
-            # static file send request to static processor
-            pass
-        else:
-            # send to index.php > then to  php  > for processing
+                self._index_file = file_location
+                self._run = True
+        if self._run:
             res = self._run_php(environ.get('PATH_INFO'))
             if res:
                 content_type = 'text/html'
@@ -77,7 +77,9 @@ class StaticWSGIWrapperMiddleware(WSGIBase):
         file_location = '{}{}'.format(self.app_path,environ.get('PATH_INFO'))  
         if op.splitext(file_location)[-1] != '':
             if op.exists(file_location) and op.isfile(file_location):
-                content_type = 'text/{}'.format(self._get_content_type(file_location))
+                if file_location.endswith('.php'):
+                    return self.app(environ,start_response)
+                content_type = 'text/{}'.format(self._get_content_type(file_location))                
                 if verbose:
                     print 'SERVING STATIC FILE {0}'.format(file_location)
                 start_response('200',[('content-type',content_type),('User-Agent','Python-php-static')])
