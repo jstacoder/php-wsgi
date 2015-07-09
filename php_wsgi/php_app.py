@@ -41,7 +41,7 @@ class PhpWsgiAppMiddleware(WSGIBase):
         os.environ['REQUEST_URI'] = url        
         os.environ['REQUEST_METHOD'] = request.method.upper()
         os.environ['PHP_SELF'] = self.index_file
-        os.environ['REQUEST_PROTOCOL'] = HTTP if not request.is_secure else HTTPS
+        os.environ['SERVER_PROTOCOL'] = HTTP if not request.is_secure else HTTPS
         os.environ['HTTP_HOST'] = request.host
         self.app_ctx.pop()
         return self._get_cmd() and getoutput(self._get_cmd())
