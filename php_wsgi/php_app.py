@@ -57,24 +57,23 @@ class PhpWsgiAppMiddleware(WSGIBase):
             if file_location.endswith('.php'):
                 self._index_file = file_location
                 self._run = True
-        if self._run:
+        if self.index_file.endswith('.php'):
             res = self._run_php(environ.get('PATH_INFO'))
-            if res:
-                content_type = 'text/html'
-                status = '200 OK'
-                try:
-                    json.loads(res)
-                    content_type = 'application/json'
-                except:
-                    pass
-                start_response(status,[('content-type',content_type),('User-Agent','Python-php-app')])
-                return res
-            else:
-                status = '404 ERROR'
-                error = 'script_file -> {} not found'.format(self.index_file)
-                start_response(status,[])
-                return error
-
+            #if res:
+            content_type = 'text/html'
+            status = '200 OK'
+            try:
+                json.loads(res)
+                content_type = 'application/json'
+            except:
+                pass
+            start_response(status,[('content-type',content_type),('User-Agent','Python-php-app')])
+            return res
+        else:
+            status = '404 ERROR'
+            error = 'script_file -> {} not found'.format(self.index_file)
+            start_response(status,[])
+            raise ServerExecption(error)
         return self.app(environ,start_response)
 
 class StaticWSGIWrapperMiddleware(WSGIBase):
