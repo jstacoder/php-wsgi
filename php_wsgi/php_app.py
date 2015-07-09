@@ -12,6 +12,9 @@ import json
 
 HTTP, HTTPS = 'http://','https://'
 
+class ServerExecption(Exception):
+    pass
+
 class WSGIBase(object):
     def __init__(self,app_path=None,app=None,index_file=None):
         self._index_file = index_file or 'index.php'
@@ -101,6 +104,7 @@ class StaticWSGIWrapperMiddleware(WSGIBase):
                 status = '404 ERROR'
                 error = 'script_file -> {} not found'.format(file_location)
                 start_response(status,[])
+                raise ServerExecption(error)
                 return error
         return self.app(environ,start_response)
 
