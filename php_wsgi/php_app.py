@@ -10,6 +10,8 @@ from commands import getoutput
 from flask import Flask,request,make_response,render_template
 import json
 
+HTTP, HTTPS = 'http://','https://'
+
 class WSGIBase(object):
     def __init__(self,app_path=None,app=None,index_file=None):
         self._index_file = index_file or 'index.php'
@@ -25,12 +27,23 @@ class PhpWsgiAppMiddleware(WSGIBase):
 
     CMD = 'php -f {0}'
 
+    def __init__(self,ctx,*args,**kwargs):
+        self.app_ctx = ctx
+        super(PhpWsgiAppMiddleware,self).__init__(*args,**kwargs)
+
     def _get_cmd(self):
         has_php = op.exists(self.index_file)
         return has_php and self.CMD.format(self.index_file)
 
-    def _run_php(self,url):
+    def _run_php(self,url):        
+        self.app_ctx.push()
+
         os.environ['REQUEST_URI'] = url        
+        os.environ['REQUEST_METHOD'] = request.method.upper()
+        os.environ['PHP_SELF'] = self.index_file
+        os.environ['REQUEST_PROTOCOL'] = HTTP if not request.is_secure else HTTPS
+        os.environ['HTTP_HOST'] = request.host
+        self.app_ctx.pop()
         return self._get_cmd() and getoutput(self._get_cmd())
 
     def __call__(self,environ,start_response):
@@ -104,8 +117,9 @@ class PhpWsgiApp(object):
         if app is None:
             app = Flask(__name__)
         self.app = app
+        ctx = app.test_request_context()
         # and add our php handler
-        self.app.wsgi_app = PhpWsgiAppMiddleware(self.app_path,self.app.wsgi_app)
+        self.app.wsgi_app = PhpWsgiAppMiddleware(ctx,self.app_path,self.app.wsgi_app)
         # now add our static handler
         self.app.wsgi_app = StaticWSGIWrapperMiddleware(self.app_path,self.app.wsgi_app)
 
