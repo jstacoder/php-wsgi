@@ -40,12 +40,15 @@ class PhpWsgiAppMiddleware(WSGIBase):
 
     def _run_php(self,url):        
         self.app_ctx.push()
-
         os.environ['REQUEST_URI'] = url        
+        os.environ['QUERY_STRING'] = request.query_string or ''
         os.environ['REQUEST_METHOD'] = request.method.upper()
         os.environ['PHP_SELF'] = self.index_file
         os.environ['SERVER_PROTOCOL'] = HTTP if not request.is_secure else HTTPS
         os.environ['HTTP_HOST'] = request.host
+        os.environ['DOCUMENT_ROOT'] = self.app_path
+        os.environ['SCRIPT_FILENAME'] = self.index_file
+        os.environ['SCRIPT_NAME'] = self.index_file
         self.app_ctx.pop()
         return self._get_cmd() and getoutput(self._get_cmd())
 
