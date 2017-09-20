@@ -1,7 +1,7 @@
-#PHP-WSGI
+# PHP-WSGI
 
-###Have you ever wanted to run a php app from the comfort of your trusty python code?
-##No Really?!? _Have You??_
+### Have you ever wanted to run a php app from the comfort of your trusty python code?  
+## No Really?!? _Have You??_
 
 well now you can
 
