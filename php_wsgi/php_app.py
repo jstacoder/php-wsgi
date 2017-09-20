@@ -30,26 +30,23 @@ class PhpWsgiAppMiddleware(WSGIBase):
 
     CMD = 'php -f {0}'
 
-    def __init__(self,ctx,*args,**kwargs):
-        self.app_ctx = ctx
+    def __init__(self,*args,**kwargs):
         super(PhpWsgiAppMiddleware,self).__init__(*args,**kwargs)
 
     def _get_cmd(self):
         has_php = op.exists(self.index_file)
         return has_php and self.CMD.format(self.index_file)
 
-    def _run_php(self,url):        
-        self.app_ctx.push()
-        os.environ['REQUEST_URI'] = url        
-        os.environ['QUERY_STRING'] = request.query_string or ''
-        os.environ['REQUEST_METHOD'] = request.method.upper()
+    def _run_php(self,environ):        
+        os.environ['REQUEST_URI'] = environ['PATH_INFO']        
+        os.environ['QUERY_STRING'] = environ['QUERY_STRING']
+        os.environ['REQUEST_METHOD'] = environ['REQUEST_METHOD']
         os.environ['PHP_SELF'] = self.index_file
-        os.environ['SERVER_PROTOCOL'] = HTTP if not request.is_secure else HTTPS
-        os.environ['HTTP_HOST'] = request.host
+        os.environ['SERVER_PROTOCOL'] = HTTP #if not request.is_secure else HTTPS
+        os.environ['HTTP_HOST'] = environ['HTTP_HOST']
         os.environ['DOCUMENT_ROOT'] = self.app_path
         os.environ['SCRIPT_FILENAME'] = self.index_file
-        os.environ['SCRIPT_NAME'] = self.index_file
-        self.app_ctx.pop()
+        os.environ['SCRIPT_NAME'] = self.index_file        
         return self._get_cmd() and getoutput(self._get_cmd())
 
     def __call__(self,environ,start_response):
@@ -61,7 +58,7 @@ class PhpWsgiAppMiddleware(WSGIBase):
                 self._index_file = file_location
                 self._run = True
         if self.index_file.endswith('.php'):
-            res = self._run_php(environ.get('PATH_INFO'))
+            res = self._run_php(environ)
             #if res:
             content_type = 'text/html'
             status = '200 OK'
@@ -123,9 +120,8 @@ class PhpWsgiApp(object):
         if app is None:
             app = Flask(__name__)
         self.app = app
-        ctx = app.test_request_context()
         # and add our php handler
-        self.app.wsgi_app = PhpWsgiAppMiddleware(ctx,self.app_path,self.app.wsgi_app)
+        self.app.wsgi_app = PhpWsgiAppMiddleware(self.app_path,self.app.wsgi_app)
         # now add our static handler
         self.app.wsgi_app = StaticWSGIWrapperMiddleware(self.app_path,self.app.wsgi_app)
 
